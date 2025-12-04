@@ -17,7 +17,7 @@ export default function CarImageGallery({ brand, model }) {
       .then((res) => res.json())
       .then((data) => {
         if (data.hits) {
-          setImages(data.hits); // 👉 contient déjà plusieurs images
+          setImages(data.hits); //contient déjà plusieurs images
         }
       });
   }, [brand, model]);
