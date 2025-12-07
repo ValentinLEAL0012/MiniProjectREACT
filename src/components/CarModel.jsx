@@ -1,49 +1,92 @@
 import { useState, useEffect } from "react";
-import CarImageCard from "./CarImageCard.jsx";
+import fetchJsonp from "fetch-jsonp";
+import CarYearSelect from "./filters/CarYearSelect.jsx";
+import CarModelDetails from "./CarModelDetails.jsx";
 import CarImageGallery from "./CarImageGallery.jsx";
 
-export default function CarModel({ makeId, makeName }) {
+export default function CarModel({ selectedBrand }) {
   const [models, setModels] = useState([]);
-  const [selectedModel, setSelectedModel] = useState(null);
+  const [selectedModel, setSelectedModel] = useState("");
+  const [selectedYear, setSelectedYear] = useState("");
 
   useEffect(() => {
-    fetch(
-      `https://vpic.nhtsa.dot.gov/api/vehicles/getmodelsformakeid/${makeId}?format=json`
-    )
+    if (!selectedBrand) return;
+
+    const make = encodeURIComponent(selectedBrand.make_display);
+    const url = `https://www.carqueryapi.com/api/0.3/?cmd=getModels&make=${make}`;
+
+    fetchJsonp(url)
       .then((res) => res.json())
       .then((data) => {
-        const modelsList = data.Results.slice(0, 20);
-        setModels(modelsList);
+        if (data.Models && data.Models.length > 0) {
+          const modelsList = data.Models.slice(0, 100);
+          setModels(modelsList);
+          setSelectedModel("");
+          setSelectedYear("");
+        } else {
+          setModels([]);
+          setSelectedModel("");
+          setSelectedYear("");
+        }
+      })
+      .catch((err) => {
+        console.error("Erreur fetch JSONP modèles:", err);
+        setModels([]);
+        setSelectedModel("");
+        setSelectedYear("");
       });
-  }, [makeId]);
+  }, [selectedBrand]);
 
   return (
     <div style={{ marginTop: "40px", textAlign: "center" }}>
-      <h2>Models for {makeName}</h2>
+      {selectedBrand && <h2>Models for {selectedBrand.make_display}</h2>}
 
-      <div style={{ marginTop: "15px" }}>
-        {models.map((model) => (
-          <button
-            key={model.Model_ID}
-            onClick={() => setSelectedModel(model.Model_Name)}
+      {models.length > 0 ? (
+        <div style={{ display: "flex", justifyContent: "center", gap: "15px", marginTop: "15px" }}>
+          {/* Liste des modèles */}
+          <select
+            value={selectedModel}
+            onChange={(e) => setSelectedModel(e.target.value)}
             style={{
-              margin: "5px",
-              padding: "8px 15px",
-              borderRadius: "8px",
-              border: "1px solid #555",
-              background: "#f7f7f7",
-              cursor: "pointer",
+              padding: "8px 12px",
+              width: "200px",
+              border: "1px solid #ccc",
+              borderRadius: "6px",
             }}
           >
-            {model.Model_Name}
-          </button>
-        ))}
-      </div>
+            <option value="">Select a model...</option>
+            {models.map((model) => (
+              <option key={model.model_id} value={model.model_name}>
+                {model.model_name}
+              </option>
+            ))}
+          </select>
 
-      {/* Affichage de la carte image */}
-      {selectedModel && (
-       <CarImageGallery brand={makeName} model={selectedModel} />
+          {/* Liste des années */}
+          {selectedModel && (
+            <CarYearSelect
+              brand={selectedBrand.make_display}
+              model={selectedModel}
+              onYearSelect={(setSelectedYear)}
+            />
+          )}
+        </div>
+      ) : (
+        <p>No models found for this brand.</p>
+      )}
 
+      {/* {selectedModel && (
+        <CarImageGallery brand={selectedBrand.make_display} model={selectedModel} />
+      )} */}
+      
+
+      {/* Détails du modèle */}
+      {selectedModel && selectedYear && (
+        <CarModelDetails
+          brand={selectedBrand.make_display}
+          model={selectedModel}
+          year={selectedYear}
+        />
       )}
     </div>
   );

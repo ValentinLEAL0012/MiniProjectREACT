@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import CarImageCard from "./CarImageCard.jsx";
 
 export default function CarImageGallery({ brand, model }) {
-  const [images, setImages] = useState([]);
+  const [image, setImage] = useState(null);
 
   const API_KEY = "43285716-9469bd68fd8d6d96222633db4";
 
@@ -16,30 +16,19 @@ export default function CarImageGallery({ brand, model }) {
     )
       .then((res) => res.json())
       .then((data) => {
-        if (data.hits) {
-          setImages(data.hits); //contient déjà plusieurs images
+        if (data.hits && data.hits.length > 0) {
+          setImage(data.hits[0].webformatURL); // 👉 seule image
+        } else {
+          setImage(null);
         }
       });
   }, [brand, model]);
 
   return (
-    <div
-      style={{
-        display: "flex",
-        flexWrap: "wrap",
-        justifyContent: "center",
-        gap: "20px",
-        marginTop: "30px",
-      }}
-    >
-      {images.map((img, index) => (
-        <CarImageCard
-          key={index}
-          brand={brand}
-          model={model}
-          imageUrl={img.webformatURL}
-        />
-      ))}
+    <div style={{ marginTop: "30px", display: "flex", justifyContent: "center" }}>
+      {image && (
+        <CarImageCard brand={brand} model={model} imageUrl={image} />
+      )}
     </div>
   );
 }
